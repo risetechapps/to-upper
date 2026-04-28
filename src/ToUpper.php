@@ -15,9 +15,28 @@ class ToUpper
         $encoding ??= $this->config('encoding', mb_internal_encoding());
         $trim ??= $this->config('trim', true);
 
+        $value = $this->ensureEncoding($value, $encoding);
+
         $normalized = mb_strtoupper($value, $encoding);
 
         return $trim ? trim($normalized) : $normalized;
+    }
+
+    private function ensureEncoding(string $value, string $targetEncoding): string
+    {
+        if (!function_exists('mb_detect_encoding')) {
+            return $value;
+        }
+
+        $detected = mb_detect_encoding($value, mb_list_encodings(), true);
+
+        if ($detected === false || $detected === $targetEncoding) {
+            return $value;
+        }
+
+        $converted = mb_convert_encoding($value, $targetEncoding, $detected);
+
+        return $converted !== false ? $converted : $value;
     }
 
     public function config(?string $key = null, mixed $default = null): mixed
