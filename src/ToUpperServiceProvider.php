@@ -3,6 +3,7 @@
 namespace RiseTechApps\ToUpper;
 
 use Illuminate\Support\ServiceProvider;
+use RiseTechApps\ToUpper\Console\Commands\ToUpperNormalizeCommand;
 
 class ToUpperServiceProvider extends ServiceProvider
 {
@@ -12,6 +13,10 @@ class ToUpperServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../config/config.php' => config_path('to-upper.php'),
             ], 'config');
+
+            $this->commands([
+                ToUpperNormalizeCommand::class,
+            ]);
         }
     }
 
@@ -24,5 +29,25 @@ class ToUpperServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(ToUpper::class, 'to-upper');
+
+        $this->registerQueryBuilderMacro();
+    }
+
+    private function registerQueryBuilderMacro(): void
+    {
+        \Illuminate\Database\Query\Builder::macro('toupper', function (array $columns, ?string $encoding = null) {
+            $encoding ??= 'UTF-8';
+            $updates = [];
+
+            foreach ($columns as $column) {
+                $updates[$column] = \Illuminate\Support\Facades\DB::raw("UPPER({$column})");
+            }
+
+            return $this->update($updates);
+        });
+
+        \Illuminate\Database\Eloquent\Builder::macro('toupper', function (array $columns, ?string $encoding = null) {
+            return $this->toBase()->toupper($columns, $encoding);
+        });
     }
 }
