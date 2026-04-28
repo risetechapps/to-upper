@@ -6,17 +6,43 @@ use RiseTechApps\ToUpper\ToUpper;
 
 trait HasToUpper
 {
+    private array $toUpperConfigCache = [];
+
     public function setAttribute($key, $value)
     {
-        if (is_string($value) && $this->shouldConvertToUpper($key)) {
+        if ($this->shouldNormalize($key, $value)) {
+            if (method_exists($this, 'beforeToUpper')) {
+                $value = $this->beforeToUpper($key, $value);
+            }
+
             $value = $this->getToUpperService()->normalize(
                 $value,
                 $this->resolveEncoding(),
                 $this->shouldTrim()
             );
+
+            if (method_exists($this, 'afterToUpper')) {
+                $value = $this->afterToUpper($key, $value);
+            }
         }
 
         return parent::setAttribute($key, $value);
+    }
+
+    private function shouldNormalize(string $key, mixed $value): bool
+    {
+        if (!is_string($value) || $value === '') {
+            return false;
+        }
+
+        if ($this->hasCast($key)) {
+            $castType = $this->getCasts()[$key] ?? null;
+            if (in_array($castType, ['array', 'json', 'object', 'collection', 'encrypted'], true)) {
+                return false;
+            }
+        }
+
+        return $this->shouldConvertToUpper($key);
     }
 
     private function shouldConvertToUpper($key): bool
@@ -55,7 +81,7 @@ trait HasToUpper
         $suffixes = $this->mergeConfiguredAttributes('morph_suffixes');
 
         foreach ($suffixes as $suffix) {
-            if ($suffix !== '' && str_contains($key, $suffix)) {
+            if ($suffix !== '' && str_ends_with($key, $suffix)) {
                 return true;
             }
         }
@@ -84,6 +110,12 @@ trait HasToUpper
     protected function mergeConfiguredAttributes(string $configKey, ?string $property = null): array
     {
         $property ??= $configKey;
+        $cacheKey = $configKey . '_' . $property;
+
+        if (isset($this->toUpperConfigCache[$cacheKey])) {
+            return $this->toUpperConfigCache[$cacheKey];
+        }
+
         $configured = $this->normalizeArray($this->getToUpperService()->config($configKey, []));
         $modelValues = [];
 
@@ -91,7 +123,10 @@ trait HasToUpper
             $modelValues = $this->normalizeArray($this->{$property});
         }
 
-        return array_values(array_unique([...$configured, ...$modelValues]));
+        $result = array_values(array_unique([...$configured, ...$modelValues]));
+        $this->toUpperConfigCache[$cacheKey] = $result;
+
+        return $result;
     }
 
     protected function normalizeArray(mixed $value): array
@@ -106,5 +141,21 @@ trait HasToUpper
     protected function getToUpperService(): ToUpper
     {
         return app(ToUpper::class);
+    }
+
+    public function scopeWhereUpper($query, string $column, string $value)
+    {
+        return $query->whereRaw(
+            "LOWER({$this->getTable()}.{$column}) = LOWER(?)",
+            [$value]
+        );
+    }
+
+    public function scopeOrWhereUpper($query, string $column, string $value)
+    {
+        return $query->orWhereRaw(
+            "LOWER({$this->getTable()}.{$column}) = LOWER(?)",
+            [$value]
+        );
     }
 }
