@@ -63,6 +63,21 @@ class Client extends Model
 
 Quando `only_upper` não estiver vazia, somente os atributos informados serão convertidos. Caso contrário, todos os atributos string serão normalizados, exceto aqueles presentes em `no_upper`, `ignore_upper` ou que representem relacionamentos morph (`*_type`, `*_id` por padrão).
 
+### Casts do Eloquent
+
+Atributos com casts que não são strings são automaticamente ignorados para evitar corromper dados:
+
+```php
+protected $casts = [
+    'settings' => 'json',      // Ignorado - não converte
+    'tags' => 'array',         // Ignorado - não converte
+    'metadata' => 'object',    // Ignorado - não converte
+    'name' => 'string',        // Convertido para maiúsculas
+];
+```
+
+**Casts ignorados automaticamente:** `array`, `json`, `object`, `collection`, `encrypted`.
+
 ### Codificação e trim
 
 Controle da codificação e do comportamento de `trim` por model:
@@ -92,16 +107,96 @@ return [
 
 ---
 
-## 🧪 Testes
+## 🔧 Comando Artisan
 
-O pacote possui uma suíte com Orchestra Testbench. Para executá-la:
+Normalize dados existentes em massa:
 
 ```bash
-  composer install
-  composer test
+# Normalizar todas as colunas fillable
+php artisan toupper:normalize Client
+
+# Especificar colunas
+php artisan toupper:normalize Client --columns=name,city,address
+
+# Preview sem alterar (dry-run)
+php artisan toupper:normalize Client --columns=name --dry-run
+
+# Ajustar tamanho do chunk para grandes volumes
+php artisan toupper:normalize Client --chunk=500
 ```
 
 ---
+
+## 🔍 Scopes de Busca
+
+Busca case-insensitive independente do collation do banco:
+
+```php
+// Busca por "joão" ou "JOÃO"
+Client::whereUpper('name', 'joão')->get();
+
+// Combinar com outros where
+Client::where('active', true)
+    ->whereUpper('name', 'joão')
+    ->get();
+
+// Ou condição
+Client::whereUpper('name', 'joão')
+    ->orWhereUpper('email', 'joao@example.com')
+    ->get();
+```
+
+---
+
+## 🎣 Callbacks de Transformação
+
+Personalize a conversão com hooks no model:
+
+```php
+class Client extends Model
+{
+    use HasToUpper;
+
+    protected function beforeToUpper(string $key, string $value): string
+    {
+        // Executa antes da conversão
+        if ($key === 'email') {
+            return strtolower($value); // Mantém e-mail minúsculo
+        }
+        return $value;
+    }
+
+    protected function afterToUpper(string $key, string $value): string
+    {
+        // Executa depois da conversão
+        if ($key === 'name') {
+            return str_replace('  ', ' ', $value); // Remove espaços duplos
+        }
+        return $value;
+    }
+}
+```
+
+---
+
+## 🗄️ Macro no Query Builder
+
+Atualize diretamente no banco de dados:
+
+```php
+use Illuminate\Support\Facades\DB;
+
+// Query Builder
+DB::table('clients')->toupper(['name', 'city']);
+
+// Eloquent
+Client::query()->toupper(['name', 'city']);
+
+// Com condição
+Client::where('active', true)->toupper(['name']);
+```
+
+**Nota:** O macro usa `UPPER()` nativo do banco, então não passa pelos callbacks do model.
 
 ## 🤝 Contribuição
 
