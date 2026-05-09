@@ -5,6 +5,7 @@ namespace RiseTechApps\ToUpper\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use RiseTechApps\ToUpper\ToUpper;
 use Symfony\Component\Finder\Finder;
 
 class ToUpperNormalizeCommand extends Command
@@ -125,18 +126,19 @@ class ToUpperNormalizeCommand extends Command
         /** @var Model $instance */
         $instance = new $modelClass();
         $total = $instance::count();
+        $toUpper = app(ToUpper::class);
 
         $this->newLine();
         $this->warn("[DRY-RUN] {$total} registros seriam afetados");
 
-        $instance::chunk($this->option('chunk'), function ($items) use ($columns) {
+        $instance::chunk($this->option('chunk'), function ($items) use ($columns, $toUpper) {
             foreach ($items as $item) {
                 $changes = [];
                 foreach ($columns as $col) {
                     if (!isset($item->$col)) continue;
                     $original = $item->$col;
                     if (is_string($original) && $original !== '') {
-                        $expected = mb_strtoupper(trim($original), 'UTF-8');
+                        $expected = $toUpper->normalize($original);
                         if ($original !== $expected) {
                             $changes[] = "{$col}: '{$original}' → '{$expected}'";
                         }
@@ -154,6 +156,7 @@ class ToUpperNormalizeCommand extends Command
         $updated = 0;
         $skipped = 0;
         $chunkSize = (int) $this->option('chunk');
+        $toUpper = app(ToUpper::class);
 
         /** @var Model $instance */
         $instance = new $modelClass();
@@ -162,7 +165,7 @@ class ToUpperNormalizeCommand extends Command
         $bar = $this->output->createProgressBar($total);
         $bar->start();
 
-        $instance::chunk($chunkSize, function ($items) use ($columns, &$updated, &$skipped, $bar) {
+        $instance::chunk($chunkSize, function ($items) use ($columns, &$updated, &$skipped, $bar, $toUpper) {
             foreach ($items as $item) {
                 $hasChanges = false;
 
@@ -170,7 +173,7 @@ class ToUpperNormalizeCommand extends Command
                     if (!isset($item->$col)) continue;
                     $original = $item->$col;
                     if (is_string($original) && $original !== '') {
-                        $expected = mb_strtoupper(trim($original), 'UTF-8');
+                        $expected = $toUpper->normalize($original);
                         if ($original !== $expected) {
                             $item->$col = $expected;
                             $hasChanges = true;

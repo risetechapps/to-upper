@@ -28,7 +28,14 @@ class ToUpper
             return $value;
         }
 
-        $detected = mb_detect_encoding($value, mb_list_encodings(), true);
+        // Se a string é ASCII pura, não precisa de conversão (ASCII é compatível com todos os encodings)
+        if (mb_check_encoding($value, 'ASCII')) {
+            return $value;
+        }
+
+        // Usar lista restrita de encodings comuns para evitar falsos positivos com strings curtas
+        $encodings = ['UTF-8', 'ISO-8859-1', 'ISO-8859-15', 'Windows-1252'];
+        $detected = mb_detect_encoding($value, $encodings, true);
 
         if ($detected === false || $detected === $targetEncoding) {
             return $value;

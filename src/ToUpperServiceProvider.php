@@ -36,7 +36,8 @@ class ToUpperServiceProvider extends ServiceProvider
     private function registerQueryBuilderMacro(): void
     {
         \Illuminate\Database\Query\Builder::macro('toupper', function (array $columns, ?string $encoding = null) {
-            $encoding ??= 'UTF-8';
+            // O parâmetro $encoding é reservado para uso futuro.
+            // UPPER() do SQL opera no encoding do banco de dados, não aceita encoding PHP.
             $updates = [];
 
             foreach ($columns as $column) {
