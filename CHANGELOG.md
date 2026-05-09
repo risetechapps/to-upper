@@ -2,6 +2,9 @@
 
 All notable changes to `to-upper` will be documented in this file
 
+## 1.2.0 - 2026-05-09
+- Corrigido validação de ASCII
+
 ## 1.1.0 - 2026-04-28
 
 - Adicionado comando Artisan `toupper:normalize` para normalização em massa de dados existentes
