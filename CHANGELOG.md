@@ -2,10 +2,14 @@
 
 All notable changes to `to-upper` will be documented in this file
 
-## 1.2.0 - 2026-05-09
+## [1.3.0] - 2026-05-09
+- Corrigido parametros e funções obsoletas em php8.4
+- Atualizado Package para 8.4
+
+## [1.2.0] - 2026-05-09
 - Corrigido validação de ASCII
 
-## 1.1.0 - 2026-04-28
+## [1.1.0] - 2026-04-28
 
 - Adicionado comando Artisan `toupper:normalize` para normalização em massa de dados existentes
 - Adicionados scopes `whereUpper()` e `orWhereUpper()` para busca case-insensitive
