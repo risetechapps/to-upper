@@ -6,7 +6,7 @@ use Illuminate\Support\Arr;
 
 class ToUpper
 {
-    public function __construct(private array $config = [])
+    public function __construct(private readonly array $config = [])
     {
     }
 

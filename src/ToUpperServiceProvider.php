@@ -20,13 +20,12 @@ class ToUpperServiceProvider extends ServiceProvider
         }
     }
 
+    #[\Override]
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/config.php', 'to-upper');
 
-        $this->app->singleton(ToUpper::class, function ($app) {
-            return new ToUpper($app['config']->get('to-upper', []));
-        });
+        $this->app->singleton(ToUpper::class, fn($app) => new ToUpper($app['config']->get('to-upper', [])));
 
         $this->app->alias(ToUpper::class, 'to-upper');
 
@@ -47,8 +46,6 @@ class ToUpperServiceProvider extends ServiceProvider
             return $this->update($updates);
         });
 
-        \Illuminate\Database\Eloquent\Builder::macro('toupper', function (array $columns, ?string $encoding = null) {
-            return $this->toBase()->toupper($columns, $encoding);
-        });
+        \Illuminate\Database\Eloquent\Builder::macro('toupper', fn(array $columns, ?string $encoding = null) => $this->toBase()->toupper($columns, $encoding));
     }
 }

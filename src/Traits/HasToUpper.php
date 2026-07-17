@@ -81,7 +81,7 @@ trait HasToUpper
         $suffixes = $this->mergeConfiguredAttributes('morph_suffixes');
 
         foreach ($suffixes as $suffix) {
-            if ($suffix !== '' && str_ends_with($key, $suffix)) {
+            if ($suffix !== '' && str_ends_with($key, (string) $suffix)) {
                 return true;
             }
         }

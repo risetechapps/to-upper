@@ -111,7 +111,7 @@ class ToUpperNormalizeCommand extends Command
         $columnsOption = $this->option('columns');
 
         if ($columnsOption) {
-            return array_map('trim', explode(',', $columnsOption));
+            return array_map(trim(...), explode(',', $columnsOption));
         }
 
         /** @var Model $instance */
